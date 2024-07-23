@@ -6,6 +6,8 @@ Q-learning
 $$Q(state,action) = (1 - \alpha)Q(state,action) + \alpha(reward+\gamma argmax_\theta(Q(state,\theta) - Q(state,action)))$$
 - To handle continuous state environment, organize into buckets for the Q-table to have finite size
 - Validation environment runs every 10 runs taking average of 5 attempts with agent taking only deterministic actions
+### Training losses:
+![Training Losses](images/q-learning0.5.png)
 - Validation runs tuple list is exported in ```.pkl``` format for use in comparison scripts
 ## Week 2:
 SAC-Discrete
@@ -26,6 +28,7 @@ $$
 
 Comparison with Q-learning
 - Utilize matplotlib script to show comparison between two pickled validation episodes of both Q-learning and SAC-Discrete
+![comparison](images/comparison.png)
 
 ## Week 3
 SAC
