@@ -53,4 +53,12 @@ SAC
 - In the validation, curve due to very different reward structure, it goes from 0 to 100 very quickly as there is a small penalty for taking additional moves but a +100 reward for reaching the end which was not in the Discrete model.\
 ![SAC](images/SAC_eval.png)
 
+Hyperparameter tuning methods:
+- Ultimately the goal is to make the optimal adjustments during training to have the best hyperparameters during training for convergence at that moment.
+  - Methods such as grid search and total random search, although exhaustive are very computationally expensive which is not ideal for our use case.
+  - Evolutionary methods such as Successive halving are much more optimal in scenarios where we want to preserve computational resources
+        1) Begin with all reasonable hyperparameters with very limited resources
+        2) Pick first half of best-performing combinations
+        3) Repeat with best performing half recieving double the resources until convergence
+
 PPO
