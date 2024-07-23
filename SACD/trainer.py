@@ -27,19 +27,33 @@ def main():
 	eps = 0
 	total_steps = 0
 	eval_episodes = []
-	while eps < 2000:
+	while eps < 3000:
 		eps += 1
 		s, info = env.reset(seed=env_seed)
 		env_seed += 1
 		done = False
 		truncated = False
 		i = 0
+		starting_position = s[0]
 		while not done:
 			i+=1
 			if eps < 100: a = env.action_space.sample()
 			else: a = agent.select_action(s, deterministic=False)
 			s_next, r, done, truncated, info = env.step(a)
 
+			# # Reward for moving towards the goal
+			# r = (s_next[0] - starting_position)
+
+			# # Reward for high velocity
+			# r += s_next[1]
+			# #Reward for reaching the goal
+			# if s_next[0] >= 0.5:
+			# 	r += 10
+
+			# # Penalty for not moving
+			# if abs(s_next[1] - s[0]) < 1e-4:
+			# 	r -= 0.1
+   
 			agent.replay_buffer.add(s, a, r, s_next, done)
 			s = s_next
 

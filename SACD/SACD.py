@@ -65,7 +65,7 @@ class ReplayBuffer(object):
 	def add(self, s, a, r, s_next, dw):
 		self.s[self.ptr] = torch.from_numpy(s).to(self.dvc)
 		self.a[self.ptr] = a
-		self.r[self.ptr] = r
+		self.r[self.ptr] = torch.from_numpy(np.array([r])).to(self.dvc)
 		self.s_next[self.ptr] = torch.from_numpy(s_next).to(self.dvc)
 		self.dw[self.ptr] = dw
 
