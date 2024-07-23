@@ -31,7 +31,7 @@ class QLearning:
         new_pos = np.digitize(new_pos,self.pos_space)
         new_vel = np.digitize(new_vel,self.vel_space)
         
-        self.Q[pos,vel,action] = (1-self.alpha)*self.Q[pos,vel,action] + self.alpha*(reward + self.gamma*np.max(self.Q[new_pos,new_vel,:]))
+        self.Q[pos,vel,action] = (1-self.alpha)*self.Q[pos,vel,action] + self.alpha*(reward + self.gamma*np.max(self.Q[new_pos,new_vel,:]-self.Q[pos,vel,action]))
         
 def main():
     env = gym.make('MountainCar-v0')
