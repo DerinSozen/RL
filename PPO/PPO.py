@@ -5,6 +5,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 import gymnasium as gym
 
-# class PPO_Agent:
-#     def __init__(self):
+class PPO_Agent:
+    def __init__(self):
         
