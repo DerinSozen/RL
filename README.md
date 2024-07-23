@@ -36,11 +36,14 @@ Comparison with Q-learning
 
     Overfitting Analysis given training-validation loss scenarios:
     - Training loss best, Validation Loss best:
-        - Given this scenario, it means that generally, we have good generality between both training and validation datasets. This all must be confirmed by final test dataset which the model has never seen to ensure that model isn't overfitting to both Training and Validation datasets.
+        - Given this scenario, it means that generally, we have good generality between both training and validation datasets. This all must be confirmed by final test dataset which the model has never seen to ensure that model isn't overfitting to both Training and Validation datasets.\
+        ![BestBest](images/BestTrainingBestValidation.png)
     - Training loss best, Validation Loss worst:
-        - If training loss is a best-case scenario while validation losses are terrible, that is an indication that the model has overfit to the training dataset and has lost generalization.
+        - If training loss is a best-case scenario while validation losses are terrible, that is an indication that the model has overfit to the training dataset and has lost generalization.\
+        ![BestWorst](images/BestTrainingWorstValidation.png)
     - Training loss worst, Validation Loss best:
-        - This means that the model has overfit towards the Validation dataset, or that there is data leakage from Validation set which has made us lose generalization.
+        - This means that the model has overfit towards the Validation dataset, or that there is data leakage from Validation set which has made us lose generalization.\
+        ![WorstBest](images/WorstTrainingBestValidation.png)
 
     Given this information and the graph at the top of the section supposing that the Q-learning graph is validation and SACD is training, it would be optimal to stop training at 500-600 episodes as at that point the validation rewards begin to decrease and training loss continues to improve, incdicating the start of overfitting.
 
