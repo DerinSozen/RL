@@ -64,4 +64,10 @@ Hyperparameter tuning methods:
         2) Pick first half of best-performing combinations\
         3) Repeat with best performing half recieving double the resources until convergence
 
-PPO
+PPO:
+- On-policy method that uses methods to limit large policy updates
+- Actor loss defined by: $L^{CPI}(\theta) = \hat{E}_t[min(r_t(\theta)\hat{A}_t,clip(r_t(\theta),1-\epsilon,1+epsilon)\hat{A}_t)] $
+    - Serves as a lower bound for the loss
+    - By minimizing loss, you can minizie large updates to the Policy, increasing training stability
+- Critic loss = MSE between predicted reward and actual reward
+![SAC](images/PPO_training.png)

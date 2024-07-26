@@ -1,37 +1,50 @@
 import gymnasium as gym
 import numpy as np
-from PPO import PPOAgent
+from PPO import Agent
+import pickle
 
-env = gym.make('MountainCar-v0')
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.n
-agent = PPOAgent(state_dim, action_dim)
+if __name__ == '__main__':
+    env = gym.make('MountainCar-v0')
+    N = 20
+    batch_size = 5
+    n_epochs = 4
+    alpha = 0.0003
+    agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, 
+                    alpha=alpha, n_epochs=n_epochs, 
+                    input_dims=env.observation_space.shape)
+    n_games = 150
 
-rollout_len = 2048
-memory = {'states': [], 'actions': [], 'rewards': [], 'action_probs': []}
-total_rewards = []
+    best_score = env.reward_range[0]
+    score_history = []
 
-for episode in range(1000):
-    state = env.reset()[0]
-    episode_reward = 0
-    while True:
-        action, action_prob = agent.act(state)
-        next_state, reward, done, _, _ = env.step(action)
+    learn_iters = 0
+    avg_score = 0
+    n_steps = 0
 
-        memory['states'].append(state)
-        memory['actions'].append(action)
-        memory['rewards'].append(reward)
-        memory['action_probs'].append(action_prob)
+    for i in range(n_games):
+        observation, _ = env.reset()
+        done = False
+        score = 0
+        j = 0
+        while not done and j < 30000:
+            j+= 1
+            action, prob, val = agent.choose_action(observation)
+            observation_, reward, done,_, info = env.step(action)
+            n_steps += 1
+            score += reward
+            agent.remember(observation, action, prob, val, reward, done)
+            if n_steps % N == 0:
+                agent.learn()
+                learn_iters += 1
+            observation = observation_
+        score_history.append(score)
+        avg_score = np.mean(score_history[-100:])
 
-        state = next_state
-        episode_reward += reward
+        if avg_score > best_score:
+            best_score = avg_score
 
-        if done:
-            total_rewards.append(episode_reward)
-            if len(memory['states']) >= rollout_len:
-                agent.update(memory)
-                memory = {'states': [], 'actions': [], 'rewards': [], 'action_probs': []}
-            break
-
-    if (episode + 1) % 10 == 0:
-        print(f'Episode {episode+1}, Reward: {episode_reward}')
+        print('episode', i, 'score %.1f' % score, 'avg score %.1f' % avg_score,
+                'time_steps', n_steps, 'learning_steps', learn_iters)
+    x = [i+1 for i in range(len(score_history))]
+    
+    pickle.dump(score_history, open('PPOrewards.pkl', 'wb'))

@@ -1,93 +1,166 @@
-import gymnasium as gym
-import torch
+import os
+import numpy as np
+import torch as T
 import torch.nn as nn
 import torch.optim as optim
-from torch.distributions import Categorical
-import numpy as np
+from torch.distributions.categorical import Categorical
 
-# Hyperparameters
-learning_rate = 3e-4
-gamma = 0.99
-epsilon_clip = 0.2
-k_epochs = 4
-rollout_len = 2048
+class PPOMemory:
+    def __init__(self, batch_size):
+        self.states = []
+        self.probs = []
+        self.vals = []
+        self.actions = []
+        self.rewards = []
+        self.dones = []
 
-# Policy Network
-class Policy(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(Policy, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
-        self.fc2 = nn.Linear(128, action_dim)
+        self.batch_size = batch_size
+
+    def generate_batches(self):
+        n_states = len(self.states)
+        batch_start = np.arange(0, n_states, self.batch_size)
+        indices = np.arange(n_states, dtype=np.int64)
+        np.random.shuffle(indices)
+        batches = [indices[i:i+self.batch_size] for i in batch_start]
+
+        return np.array(self.states),\
+                np.array(self.actions),\
+                np.array(self.probs),\
+                np.array(self.vals),\
+                np.array(self.rewards),\
+                np.array(self.dones),\
+                batches
+
+    def store_memory(self, state, action, probs, vals, reward, done):
+        self.states.append(state)
+        self.actions.append(action)
+        self.probs.append(probs)
+        self.vals.append(vals)
+        self.rewards.append(reward)
+        self.dones.append(done)
+
+class ActorNetwork(nn.Module):
+    def __init__(self, n_actions, input_dims, alpha,
+            fc1_dims=256, fc2_dims=256, chkpt_dir='tmp/ppo'):
+        super(ActorNetwork, self).__init__()
+
+        self.actor = nn.Sequential(
+                nn.Linear(*input_dims, fc1_dims),
+                nn.ReLU(),
+                nn.Linear(fc1_dims, fc2_dims),
+                nn.ReLU(),
+                nn.Linear(fc2_dims, n_actions),
+                nn.Softmax(dim=-1)
+        )
+
+        self.optimizer = optim.Adam(self.parameters(), lr=alpha)
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.to(self.device)
+
+    def forward(self, state):
+        dist = self.actor(state)
+        dist = Categorical(dist)
         
-    def forward(self, x):
-        x = torch.tanh(self.fc1(x))
-        action_probs = torch.softmax(self.fc2(x), dim=-1)
-        return action_probs
+        return dist
 
-    def get_action(self, state):
-        state = torch.FloatTensor(state).unsqueeze(0)
-        action_probs = self.forward(state)
-        dist = Categorical(action_probs)
-        action = dist.sample()
-        return action.item(), action_probs[:, action.item()].item()
+class CriticNetwork(nn.Module):
+    def __init__(self, input_dims, alpha, fc1_dims=256, fc2_dims=256,
+            chkpt_dir='tmp/ppo'):
+        super(CriticNetwork, self).__init__()
 
-# Critic Network
-class Critic(nn.Module):
-    def __init__(self, state_dim):
-        super(Critic, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
-        self.fc2 = nn.Linear(128, 1)
-        
-    def forward(self, x):
-        x = torch.tanh(self.fc1(x))
-        value = self.fc2(x)
+        self.critic = nn.Sequential(
+                nn.Linear(*input_dims, fc1_dims),
+                nn.ReLU(),
+                nn.Linear(fc1_dims, fc2_dims),
+                nn.ReLU(),
+                nn.Linear(fc2_dims, 1)
+        )
+
+        self.optimizer = optim.Adam(self.parameters(), lr=alpha)
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.to(self.device)
+
+    def forward(self, state):
+        value = self.critic(state)
+
         return value
 
-# PPO Agent
-class PPOAgent:
-    def __init__(self, state_dim, action_dim):
-        self.policy = Policy(state_dim, action_dim)
-        self.critic = Critic(state_dim)
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
-        self.policy_old = Policy(state_dim, action_dim)
-        self.policy_old.load_state_dict(self.policy.state_dict())
-    
-    def update(self, memory):
-        states = torch.FloatTensor(np.array(memory['states']))
-        actions = torch.LongTensor(memory['actions'])
-        rewards = torch.FloatTensor(memory['rewards'])
-        old_action_probs = torch.FloatTensor(memory['action_probs'])
-        
-        returns = []
-        discounted_sum = 0
-        for reward in reversed(rewards):
-            discounted_sum = reward + gamma * discounted_sum
-            returns.insert(0, discounted_sum)
-        returns = torch.FloatTensor(returns)
-        
-        for _ in range(k_epochs):
-            action_probs = self.policy(states)
-            dist = Categorical(action_probs)
-            new_action_probs = dist.log_prob(actions)
 
-            ratios = torch.exp(new_action_probs - old_action_probs)
-            advantages = returns - self.critic(states).squeeze().detach()
-            surr1 = ratios * advantages
-            surr2 = torch.clamp(ratios, 1-epsilon_clip, 1+epsilon_clip) * advantages
+class Agent:
+    def __init__(self, n_actions, input_dims, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
+            policy_clip=0.2, batch_size=64, n_epochs=10):
+        self.gamma = gamma
+        self.policy_clip = policy_clip
+        self.n_epochs = n_epochs
+        self.gae_lambda = gae_lambda
+        self.batch_size = batch_size
 
-            policy_loss = -torch.min(surr1, surr2).mean()
-            self.policy_optimizer.zero_grad()
-            policy_loss.backward()
-            self.policy_optimizer.step()
+        self.actor = ActorNetwork(n_actions, input_dims, alpha)
+        self.critic = CriticNetwork(input_dims, alpha)
+        self.memory = PPOMemory(self.batch_size)
+       
+    def remember(self, state, action, probs, vals, reward, done):
+        self.memory.store_memory(state, action, probs, vals, reward, done)
 
-            value_loss = nn.MSELoss()(self.critic(states).squeeze(), returns)
-            self.critic_optimizer.zero_grad()
-            value_loss.backward()
-            self.critic_optimizer.step()
-        
-        self.policy_old.load_state_dict(self.policy.state_dict())
-    
-    def act(self, state):
-        action, action_prob = self.policy_old.get_action(state)
-        return action, action_prob
+    def choose_action(self, observation):
+        state = T.tensor(np.array(observation), dtype=T.float).to(self.actor.device)
+
+        dist = self.actor(state)
+        value = self.critic(state)
+        action = dist.sample()
+
+        probs = T.squeeze(dist.log_prob(action)).item()
+        action = T.squeeze(action).item()
+        value = T.squeeze(value).item()
+
+        return action, probs, value
+
+    def learn(self):
+        for _ in range(self.n_epochs):
+            state_arr, action_arr, old_prob_arr, vals_arr,\
+            reward_arr, dones_arr, batches = \
+                    self.memory.generate_batches()
+
+            values = vals_arr
+            advantage = np.zeros(len(reward_arr), dtype=np.float32)
+
+            for t in range(len(reward_arr)-1):
+                discount = 1
+                a_t = 0
+                for k in range(t, len(reward_arr)-1):
+                    a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
+                            (1-int(dones_arr[k])) - values[k])
+                    discount *= self.gamma*self.gae_lambda
+                advantage[t] = a_t
+            advantage = T.tensor(advantage).to(self.actor.device)
+
+            values = T.tensor(values).to(self.actor.device)
+            for batch in batches:
+                states = T.tensor(state_arr[batch], dtype=T.float).to(self.actor.device)
+                old_probs = T.tensor(old_prob_arr[batch]).to(self.actor.device)
+                actions = T.tensor(action_arr[batch]).to(self.actor.device)
+
+                dist = self.actor(states)
+                critic_value = self.critic(states)
+
+                critic_value = T.squeeze(critic_value)
+
+                new_probs = dist.log_prob(actions)
+                prob_ratio = new_probs.exp() / old_probs.exp()
+                weighted_probs = advantage[batch] * prob_ratio
+                weighted_clipped_probs = T.clamp(prob_ratio, 1-self.policy_clip,
+                        1+self.policy_clip)*advantage[batch]
+                actor_loss = -T.min(weighted_probs, weighted_clipped_probs).mean()
+
+                returns = advantage[batch] + values[batch]
+                critic_loss = (returns-critic_value)**2
+                critic_loss = critic_loss.mean()
+
+                total_loss = actor_loss + 0.5*critic_loss
+                self.actor.optimizer.zero_grad()
+                self.critic.optimizer.zero_grad()
+                total_loss.backward()
+                self.actor.optimizer.step()
+                self.critic.optimizer.step()
+
+        self.memory = PPOMemory(self.batch_size)
