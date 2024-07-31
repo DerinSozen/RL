@@ -49,7 +49,7 @@ class ActorNetwork(nn.Module):
         
         # Define the network architecture
         self.actor = nn.Sequential(
-            nn.Linear(input_dims[1], fc1_dims),
+            nn.Linear(25, fc1_dims),
             nn.ReLU(),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),
@@ -74,7 +74,7 @@ class CriticNetwork(nn.Module):
         
         # Define the network architecture
         self.critic = nn.Sequential(
-            nn.Linear(input_dims[1], fc1_dims),
+            nn.Linear(25, fc1_dims),
             nn.ReLU(),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),

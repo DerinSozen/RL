@@ -4,6 +4,7 @@ import gymnasium as gym
 import os, shutil
 import argparse
 import pickle
+import numpy as np
 import torch
 
 #define hyperparameters
@@ -12,11 +13,8 @@ UPDATE_EVERY = 50
 
 def main():
 	#Create Env
-	env = gym.make("MountainCar-v0")
-	eval_env = gym.make("MountainCar-v0")
-
-	print(env.observation_space.shape)
-	print(env.action_space.n)
+	env = gym.make("highway-v0")
+	eval_env = gym.make("highway-v0")
 	# Seed Everything
 	env_seed = 0
 	torch.manual_seed(0)
@@ -32,17 +30,18 @@ def main():
 	while eps < 3000:
 		eps += 1
 		s, info = env.reset(seed=env_seed)
+		s = np.array(s.flatten()).T
 		env_seed += 1
 		done = False
 		truncated = False
 		i = 0
 		starting_position = s[0]
-		while not done:
+		while not done and not truncated:
 			i+=1
 			if eps < 100: a = env.action_space.sample()
 			else: a = agent.select_action(s, deterministic=False)
 			s_next, r, done, truncated, info = env.step(a)
-   
+			s_next = np.array(s_next.flatten()).T
 			agent.replay_buffer.add(s, a, r, s_next, done)
 			s = s_next
 

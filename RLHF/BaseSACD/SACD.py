@@ -7,22 +7,22 @@ import pickle
 from torch.distributions.categorical import Categorical
 
 class Double_Q_Net(nn.Module):
-    def __init__(self):
+    def __init__(self, state_dim, action_dim):
         super(Double_Q_Net, self).__init__()
         self.Q1 = nn.Sequential(
-            nn.Linear(2, 128),
+            nn.Linear(25, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, 3),
+            nn.Linear(128, action_dim),
             nn.Identity()
         )
         self.Q2 = nn.Sequential(
-            nn.Linear(2, 128),
+            nn.Linear(25, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, 3),
+            nn.Linear(128, action_dim),
             nn.Identity()
         )
 
@@ -51,6 +51,7 @@ class Policy_Net(nn.Module):
 
 class ReplayBuffer(object):
 	def __init__(self, state_dim, dvc, max_size=int(1e6)):
+		state_dim = 25
 		self.max_size = max_size
 		self.dvc = dvc
 		self.ptr = 0
@@ -80,7 +81,7 @@ class ReplayBuffer(object):
 class SACD_agent():
 	def __init__(self,env):
 		self.dvc = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-		self.state_dim = env.observation_space.shape[0]
+		self.state_dim = 25
 		self.action_dim = env.action_space.n
 
 		self.lr = 3e-4
@@ -95,7 +96,7 @@ class SACD_agent():
 		self.actor = Policy_Net()
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
 
-		self.q_critic = Double_Q_Net().to(self.dvc)
+		self.q_critic = Double_Q_Net(self.state_dim,self.action_dim).to(self.dvc)
 		self.q_critic_optimizer = torch.optim.Adam(self.q_critic.parameters(), lr=self.lr)
 		self.q_critic_target = copy.deepcopy(self.q_critic)
 		for p in self.q_critic_target.parameters(): p.requires_grad = False

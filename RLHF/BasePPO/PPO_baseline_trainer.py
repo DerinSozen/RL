@@ -11,7 +11,7 @@ if __name__ == '__main__':
     alpha = 0.0003
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, 
                     alpha=alpha, n_epochs=n_epochs, 
-                    input_dims=env.observation_space.shape)
+                    input_dims=env.observation_space.shape[0])
     n_games = 200
 
     best_score = env.reward_range[0]
@@ -27,6 +27,7 @@ if __name__ == '__main__':
         j = 0
         while not done and j < 30000:
             j+= 1
+            observation = np.array(observation).flatten().T
             action, prob, val = agent.choose_action(observation)
             observation_, reward, done,_, info = env.step(action)
             n_steps += 1

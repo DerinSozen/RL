@@ -18,7 +18,7 @@ def callback(obs_t, obs_tp1, action, rew, terminated, truncated, info):
         raise Exception("Test Ended")
 
 
-# Create the Highwat Environment, set observation type to GrayscaleImage in config
+# Create the Highway Environment, set observation type to GrayscaleImage in config
 env = gym.make("highway-v0",render_mode="rgb_array")
 config = {
        "observation": {
