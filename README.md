@@ -71,3 +71,21 @@ PPO:
     - By minimizing loss, you can minizie large updates to the Policy, increasing training stability
 - Critic loss = MSE between predicted reward and actual reward
 ![SAC](images/PPO_training.png)
+
+
+## Week 4
+
+RLHF applications
+- Train a neural network based on human preference
+    - Human feedback highly subjective, and needs bias standardization
+    - On a scale of 1-5, humans don't follow a normal dist with mean at 2.5, thus we should standardize with multiple methods
+    - NN to train on human feeback can shape a reward function
+
+- Highway Env
+    - Plan: train based ~100 user episoes (about 2000 steps)
+        - Greyscale image, good for building generallization if not seen before number of vehicles
+        - Occupancy grid, similar but less generalization
+        - Time to collision, least generizable but quite simple
+
+- Image classification
+    - To accurately model human sight -> reward model we can use CNN on Greyscale image

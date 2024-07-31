@@ -12,12 +12,11 @@ if __name__ == '__main__':
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, 
                     alpha=alpha, n_epochs=n_epochs, 
                     input_dims=env.observation_space.shape)
-    n_games = 150
+    n_games = 200
 
     best_score = env.reward_range[0]
     score_history = []
 
-    learn_iters = 0
     avg_score = 0
     n_steps = 0
 
@@ -35,7 +34,6 @@ if __name__ == '__main__':
             agent.remember(observation, action, prob, val, reward, done)
             if n_steps % N == 0:
                 agent.learn()
-                learn_iters += 1
             observation = observation_
         score_history.append(score)
         avg_score = np.mean(score_history[-100:])
@@ -44,7 +42,7 @@ if __name__ == '__main__':
             best_score = avg_score
 
         print('episode', i, 'score %.1f' % score, 'avg score %.1f' % avg_score,
-                'time_steps', n_steps, 'learning_steps', learn_iters)
+                'time_steps', n_steps)
     x = [i+1 for i in range(len(score_history))]
     
     pickle.dump(score_history, open('PPOrewards.pkl', 'wb'))
