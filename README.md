@@ -75,6 +75,13 @@ PPO:
 
 ## Week 4
 
+Benchmark Comparison Between SACD and PPO
+![Training](images/Training_rewards.png)
+![Eval](images/Evaluation_rewards.png)
+![Success_rates](images/Success_rates.png)
+
+- Overall, SACD converged faster in training, converged to a better reward in evaluation and reached 100% completion in a similar episode count. However, PPO was much more stable in training. This is due to the inherent designs, by using a clipped objective function, PPO guarantees stability by reducing the magnitude of policy updates, however SAC uses entropy regularization and off-policy learning which means that it can have better exploration,and can be more sample efficent by reusing past experience from different actor policies.
+
 RLHF applications
 - Train a neural network based on human preference
     - Human feedback highly subjective, and needs bias standardization
@@ -82,6 +89,10 @@ RLHF applications
     - NN to train on human feeback can shape a reward function
 
 - Highway Env
+    - All observations come in 2d arrays, which aren't compatible with traditional nn architectures, as a simple solution, you can flatten out the 2d array into a 1d array
+![PPOHighway](images/highwayPPO.png)
+![HumanHighway](images/highwayHuman.png)
+    - Due to lack of ability to permutate objects in experiences that similarly to humans, and possibly due to the reward function, the PPO algorithm never reaches base scores reached by a human and crashes significantly more often.
     - Plan: train based ~100 user episoes (about 2000 steps)
         - Greyscale image, good for building generallization if not seen before number of vehicles
         - Occupancy grid, similar but less generalization

@@ -163,7 +163,7 @@ class Agent:
                 
                 total_loss = actor_loss + 0.5 * critic_loss
                 
-                self.actor.optimizer.zero_grad()
+                self.actor.optimizer.zero_grad() 
                 self.critic.optimizer.zero_grad()
                 total_loss.backward()
                 self.actor.optimizer.step()

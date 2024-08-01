@@ -1,9 +1,11 @@
 import gymnasium as gym
 import numpy as np
+import torch
 from PPO import Agent
 import pickle
 
 if __name__ == '__main__':
+    torch.set_num_threads(12)
     env = gym.make('highway-v0')
     N = 20
     batch_size = 5
@@ -12,7 +14,7 @@ if __name__ == '__main__':
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, 
                     alpha=alpha, n_epochs=n_epochs, 
                     input_dims=env.observation_space.shape[0])
-    n_games = 200
+    n_games = 150
 
     best_score = env.reward_range[0]
     score_history = []
@@ -23,13 +25,14 @@ if __name__ == '__main__':
     for i in range(n_games):
         observation, _ = env.reset()
         done = False
+        truncated = False
         score = 0
         j = 0
-        while not done and j < 30000:
+        while not done and not truncated:
             j+= 1
             observation = np.array(observation).flatten().T
             action, prob, val = agent.choose_action(observation)
-            observation_, reward, done,_, info = env.step(action)
+            observation_, reward, done,truncated, info = env.step(action)
             n_steps += 1
             score += reward
             agent.remember(observation, action, prob, val, reward, done)

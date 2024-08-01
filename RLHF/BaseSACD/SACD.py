@@ -35,17 +35,18 @@ class Policy_Net(nn.Module):
     def __init__(self):
         super(Policy_Net, self).__init__()
         self.P = nn.Sequential(
-            nn.Linear(2, 128),
+            nn.Linear(25, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, 3),
+            nn.Linear(128, 5),
             nn.Identity()
         )
 
     def forward(self, s):
+        s = s.flatten()
         logits = self.P(s)
-        probs = F.softmax(logits, dim=1)
+        probs = F.softmax(logits, dim=-1)
         return probs
 
 
