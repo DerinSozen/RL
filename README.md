@@ -92,11 +92,16 @@ RLHF applications
     - All observations come in 2d arrays, which aren't compatible with traditional nn architectures, as a simple solution, you can flatten out the 2d array into a 1d array
 ![PPOHighway](images/highwayPPO.png)
 ![HumanHighway](images/highwayHuman.png)
+![SACDHighway](images/highwaySACD.png)
     - Due to lack of ability to permutate objects in experiences that similarly to humans, and possibly due to the reward function, the PPO algorithm never reaches base scores reached by a human and crashes significantly more often.
-    - Plan: train based ~100 user episoes (about 2000 steps)
-        - Greyscale image, good for building generallization if not seen before number of vehicles
-        - Occupancy grid, similar but less generalization
-        - Time to collision, least generizable but quite simple
+    - SACD performs even worse than PPO due to it's lower stability in training leading to it being unable to reliably maximize rewards, despite consitently avoiding collisions(one of the main goals of the environment)
+    - Plan: train based ~100 user episoes (about 4000 steps)
+        - Begin with a simple linear nn as reward model based on flattened proximity matrix of vehicles
+        - Train network to identify predicted user action for a state,
+            - reward = 1 if predicted user action from previous state
+            - reward = -1 if not taken predicted user action from previous state
+            - Esentially assuming 
+        - the transition to a more complex CNN reward model based on greyscale image of environment.
 
 - Image classification
     - To accurately model human sight -> reward model we can use CNN on Greyscale image

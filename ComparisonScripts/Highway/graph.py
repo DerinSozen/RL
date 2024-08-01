@@ -19,3 +19,12 @@ plt.ylabel("Rewards")
 plt.title("Human Player Rewards on Highway environment")
 plt.ylim(bottom=0)
 plt.savefig("highwayHuman.png")
+
+plt.cla()
+
+sacd_rewards = pickle.load(open("SACD_training_rewards.pkl", "rb"))
+plt.plot(np.array(sacd_rewards))
+plt.xlabel("Episodes")
+plt.ylabel("Rewards")
+plt.title("SACD Rewards on Highway environment")
+plt.savefig("highwaySACD.png")

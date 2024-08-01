@@ -85,10 +85,10 @@ class SACD_agent():
 		self.state_dim = 25
 		self.action_dim = env.action_space.n
 
-		self.lr = 3e-4
+		self.lr = 2e-4
 		self.gamma = 0.99
 		self.hid_shape = [128,128]
-		self.batch_size = 256
+		self.batch_size = 1
 		self.tau = 0.005
 		self.H_mean = 0
 		self.replay_buffer = ReplayBuffer(self.state_dim, self.dvc, max_size=int(1e6))
@@ -126,7 +126,7 @@ class SACD_agent():
 			next_log_probs = torch.log(next_probs+1e-8) 
 			next_q1_all, next_q2_all = self.q_critic_target(s_next) 
 			min_next_q_all = torch.min(next_q1_all, next_q2_all)
-			v_next = torch.sum(next_probs * (min_next_q_all - self.alpha * next_log_probs), dim=1, keepdim=True)
+			v_next = torch.sum(next_probs * (min_next_q_all - self.alpha * next_log_probs), dim=-1, keepdim=True)
 			target_Q = r + (~done) * self.gamma * v_next
 
 		
@@ -144,7 +144,7 @@ class SACD_agent():
 			q1_all, q2_all = self.q_critic(s)
 		min_q_all = torch.min(q1_all, q2_all)
 
-		a_loss = torch.sum(probs * (self.alpha*log_probs - min_q_all), dim=1, keepdim=True)
+		a_loss = torch.sum(probs * (self.alpha*log_probs - min_q_all), dim=-1, keepdim=True)
 
 		self.actor_optimizer.zero_grad()
 		a_loss.mean().backward()
@@ -152,7 +152,7 @@ class SACD_agent():
   
 		# Update Alpha
 		with torch.no_grad():
-			self.H_mean = -torch.sum(probs * log_probs, dim=1).mean()
+			self.H_mean = -torch.sum(probs * log_probs, dim=-1).mean()
 		alpha_loss = self.log_alpha * (self.H_mean - self.target_entropy)
 
 		self.alpha_optim.zero_grad()
