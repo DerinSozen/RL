@@ -105,3 +105,19 @@ RLHF applications
 
 - Image classification
     - To accurately model human sight -> reward model we can use CNN on Greyscale image
+
+
+# Week 5&6
+- Designed Rewards Model based PPO to compare expected user result based on 100 episodes
+    - Probability of user taking that action = reward
+    - Based on neural net with softmax output of vector probs
+
+![RewardsModelLoss](images/rewardsmodel.png)
+
+![RLHF1](images/RLHFMountainCarTrainingRewards.png)
+
+![RLHF2](images/RLHFMountainCarSuccessRates.png)
+
+- Specifically high instability due to incorporation of Rewards model, partly stabilized by giving a rewards shaping role
+- Rewards shaping model helps fix early training inconsitency and rewards scarcity by providing natural checkpoints early on
+- Could be used as an alternative to epsilon greedy that is more efficent in training but takes longer to prepare

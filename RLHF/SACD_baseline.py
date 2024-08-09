@@ -93,7 +93,6 @@ class SACD_agent():
 
 		self.lr = 3e-4
 		self.gamma = 0.99
-		self.hid_shape = [128,128]
 		self.batch_size = 256
 		self.tau = 0.005
 		self.H_mean = 0

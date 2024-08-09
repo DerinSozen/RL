@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 
 dataset = pickle.load(open('play_observations.pkl','rb'))
+dataset = dataset[2:]
 actions = pickle.load(open('play_actions.pkl','rb'))
 
 class RewardsModel(nn.Module):
@@ -33,11 +34,12 @@ import pickle
 
 # Load dataset
 dataset = pickle.load(open('play_observations.pkl','rb'))
+dataset = dataset[1:]
 actions = pickle.load(open('play_actions.pkl','rb'))
 
 # Convert dataset to tensors
 X = torch.tensor(dataset, dtype=torch.float32)
-y = torch.tensor(actions, dtype=torch.long)
+y = torch.nn.functional.one_hot(torch.tensor(actions), num_classes=3).float()
 
 class RewardsModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -53,17 +55,26 @@ class RewardsModel(nn.Module):
         out = self.fc2(out)
         out = self.softmax(out)
         return out
+    
+    def reward(self, state,action):
+        state_tensor = torch.tensor(state,dtype=torch.float32).unsqueeze(0)
+        probs = self.forward(state_tensor)
+        prob_action = torch.argmax(probs)
+        if prob_action == action:
+            return 1
+        else:
+            return 0
 
 # Hyperparameters
 input_dim = 2
-hidden_dim = 10
+hidden_dim = 32
 output_dim = 3
 learning_rate = 0.001
-num_epochs = 100
+num_epochs = 4000
 
 # Initialize model, loss function, and optimizer
 model = RewardsModel(input_dim, hidden_dim, output_dim)
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()  # Use Binary Cross-Entropy Loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Training loop
@@ -90,4 +101,14 @@ plt.plot(range(num_epochs), losses)
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.title('Training Loss')
-plt.show()
+plt.savefig("rewardsmodel.png")
+
+state = dataset[0]
+print(state)
+print(actions[0])
+print(torch.tensor(state))
+state_tensor = torch.tensor(state,dtype=torch.float32).unsqueeze(0)
+result = model(state_tensor)
+print(result)
+
+pickle.dump(model, open('rewards_model.pkl', 'wb'))
